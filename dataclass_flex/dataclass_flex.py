@@ -31,21 +31,17 @@ def create_dataclass_wrapper(
         sig = inspect.signature(func)
 
         def wrapped_func(*args, **kwargs):
-            print(f"Original args: {args}")
-            print(f"Original kwargs: {kwargs}")
             new_args = []
             new_kwargs = {}
-
             for i, (param_name, param) in enumerate(sig.parameters.items()):
                 target_type = param.annotation
                 if target_type in dataclasses:
                     input_dataclass = args[i] if i < len(args) else kwargs.get(param_name)
 
                     if input_dataclass is not None:
-                        print(f"Input dataclass: {input_dataclass}")
                         input_type = type(input_dataclass)
                         if input_type != target_type:
-                            if input_type in graph and target_type in graph:  # added condition here
+                            try:
                                 path = bfs_path(input_type, target_type)
                                 if path:
                                     for j in range(len(path) - 1):
@@ -57,21 +53,15 @@ def create_dataclass_wrapper(
                                     raise ValueError(
                                         f"No conversion path for {input_type} to {target_type}"
                                     )
+                            except KeyError as e:
+                                raise ValueError(f'Input of type {e} is not right.')
 
                     if i < len(args):
                         new_args.append(input_dataclass)
                     else:
                         new_kwargs[param_name] = input_dataclass
-                else:  # for non-dataclass parameters, simply pass them through
-                    if i < len(args):
-                        new_args.append(args[i])
-                    else:
-                        new_kwargs[param_name] = kwargs.get(param_name)
-
-            print(f"New args: {new_args}")
-            print(f"New kwargs: {new_kwargs}")
+                        
             return func(*new_args, **new_kwargs)
 
         return wrapped_func
-
     return dataclass_wrapper
