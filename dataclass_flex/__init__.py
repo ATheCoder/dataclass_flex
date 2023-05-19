@@ -1,0 +1,1 @@
+from .dataclass_flex import create_dataclass_wrapper
